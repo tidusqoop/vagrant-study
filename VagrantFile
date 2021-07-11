@@ -1,0 +1,68 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+    config.vm.box = "bento/ubuntu-20.04"
+
+    config.vm.define "master", primary: true do |master|
+        master.vm.hostname = "master"
+        master.vm.provider "virtualbox" do |vb|
+            vb.name = "ubuntu-master"
+            vb.memory = 1024
+            vb.cpus = 2
+            vb.gui = false
+        end
+    end
+
+    config.vm.define "worker-00" do |master|
+        master.vm.hostname = "worker-00"
+        master.vm.provider "virtualbox" do |vb|
+            vb.name = "ubuntu-worker-00"
+            vb.memory = 1024
+            vb.cpus = 2
+            vb.gui = false
+        end
+    end
+
+    config.vm.provision "shell", inline: <<-SHELL
+        apt-get update
+        apt-get -y install git
+        apt-get -y install curl
+        apt-get -y install make
+        apt-get -y install tree
+
+        apt-get -y install zsh
+        chsh -s /bin/zsh vagrant
+    SHELL
+
+    config.vm.provision "shell", privileged: false, inline: <<-SHELL
+        # oh-my-zsh
+        curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh | sh
+
+        # fzf
+        git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+        ~/.fzf/install  --key-bindings --completion --update-rc
+
+        # fasd
+        git clone https://github.com/clvv/fasd.git
+        (cd fasd; sudo make install)
+
+        # zsh-autosuggestions
+        git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+
+        # edit ~/.zshrc
+        echo "alias ll='ls -alFG'" >> ~/.zshrc
+        echo "alias la='ls -A'" >> ~/.zshrc
+        echo "alias l='ls -CF'" >> ~/.zshrc
+        echo "" >> ~/.zshrc
+        echo 'eval "$(fasd --init auto)"' >> ~/.zshrc
+        echo "alias a='fasd -a'        # any" >> ~/.zshrc
+        echo "alias s='fasd -si'       # show / search / select" >> ~/.zshrc
+        echo "alias d='fasd -d'        # directory" >> ~/.zshrc
+        echo "alias f='fasd -f'        # file" >> ~/.zshrc
+        echo "alias sd='fasd -sid'     # interactive directory selection" >> ~/.zshrc
+        echo "alias sf='fasd -sif'     # interactive file selection" >> ~/.zshrc
+        echo "alias z='fasd_cd -d'     # cd, same functionality as j in autojump" >> ~/.zshrc
+        echo "alias zz='fasd_cd -d -i' # cd with interactive selection" >> ~/.zshrc
+    SHELL
+end
